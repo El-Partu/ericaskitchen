@@ -1,0 +1,2334 @@
+===== components/shared/Navbar.tsx =====
+"use client";
+
+import Link from "next/link";
+import { Search, ShoppingCart } from "lucide-react";
+import { motion } from "framer-motion";
+import { NavLink } from "@/types";
+import { useCart } from "@/lib/cart-context";
+
+const navLinks: NavLink[] = [
+  { label: "HOME", href: "/" },
+  { label: "MENU", href: "/menu" },
+  { label: "SERVICES", href: "/services" },
+  { label: "CONTACT US", href: "/contact" },
+];
+
+export default function Navbar() {
+  const { itemCount } = useCart();
+
+  return (
+    <motion.header
+      initial={{ opacity: 0, y: -12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.45, ease: [0.25, 0.1, 0.25, 1] }}
+      className="w-full border-b border-black/10 bg-white"
+    >
+      <div className="mx-auto flex h-[70px] max-w-7xl items-center justify-between px-6 lg:px-12">
+        {/* Logo */}
+        <Link
+          href="/"
+          className="font-heading text-sm font-normal tracking-wide text-black"
+        >
+          LOGO
+        </Link>
+
+        {/* Navigation Links */}
+        <nav className="hidden items-center gap-10 md:flex">
+          {navLinks.map((link) => (
+            <Link
+              key={link.href}
+              href={link.href}
+              className="font-heading text-lg font-normal text-black transition-colors hover:text-primary"
+            >
+              {link.label}
+            </Link>
+          ))}
+        </nav>
+
+        {/* Icons */}
+        <div className="flex items-center gap-4">
+          <button
+            className="flex h-[30px] w-[30px] items-center justify-center text-black transition-colors hover:text-primary"
+            aria-label="Search"
+          >
+            <Search size={24} />
+          </button>
+
+          <Link
+            href="/cart"
+            className="relative flex h-[30px] w-[30px] items-center justify-center text-black transition-colors hover:text-primary"
+            aria-label="Cart"
+          >
+            <ShoppingCart size={24} />
+            {itemCount > 0 && (
+              <span className="absolute -right-1.5 -top-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-primary text-xs font-bold text-white">
+                {itemCount}
+              </span>
+            )}
+          </Link>
+        </div>
+      </div>
+    </motion.header>
+  );
+}
+
+===== components/shared/CartPanel.tsx =====
+"use client";
+
+import Image from "next/image";
+import Link from "next/link";
+import {
+  ShoppingCart,
+  MapPin,
+  Clock,
+  Minus,
+  Plus,
+  Trash2,
+  Search,
+} from "lucide-react";
+import { toast } from "sonner";
+import { useCart } from "@/lib/cart-context";
+import { OrderType } from "@/types";
+
+const ORDER_TYPES: OrderType[] = ["Delivery", "Dine In", "Takeaway"];
+
+export default function CartPanel() {
+  const {
+    items,
+    orderType,
+    customerName,
+    customerPhone,
+    promoCode,
+    notes,
+    deliveryCharge,
+    updateQuantity,
+    removeItem,
+    clearCart,
+    setOrderType,
+    setCustomerName,
+    setCustomerPhone,
+    setPromoCode,
+    setNotes,
+    subtotal,
+    total,
+    itemCount,
+  } = useCart();
+
+  return (
+    <div className="sticky top-24 rounded-[20px] bg-white shadow-[0_4px_4px_rgba(0,0,0,0.25)]">
+      {/* Delivery Address */}
+      <div className="mx-3 mt-3 rounded-[20px] bg-[#eeeeee] p-5">
+        <h3 className="font-heading text-lg font-medium">DELIVERY ADDRESS</h3>
+        <div className="mt-3 flex items-center gap-2">
+          <MapPin size={18} className="shrink-0" />
+          <span className="font-body text-base">
+            Akuafo Main Hall, UG, Legon
+          </span>
+        </div>
+        <div className="mt-1 flex items-center gap-2">
+          <Clock size={18} className="shrink-0" />
+          <span className="font-body text-base">13 mins</span>
+        </div>
+      </div>
+
+      {/* Cart header */}
+      <div className="flex items-center justify-between px-4 pt-4">
+        <div className="flex items-center gap-2">
+          <ShoppingCart size={20} />
+          <h3 className="font-heading text-lg font-medium">Cart</h3>
+        </div>
+        <span className="font-body text-xs font-light text-foreground/60">
+          Order ID: #1099
+        </span>
+      </div>
+
+      {/* Order type toggle */}
+      <div className="mx-3 mt-3 flex rounded-full border border-black/30 p-1">
+        {ORDER_TYPES.map((type) => (
+          <button
+            key={type}
+            onClick={() => setOrderType(type)}
+            className={`flex-1 rounded-full py-2 text-center font-body text-sm transition-colors ${
+              orderType === type
+                ? "bg-primary-light text-white"
+                : "text-foreground"
+            }`}
+          >
+            {type}
+          </button>
+        ))}
+      </div>
+
+      {/* Cart items */}
+      <div className="mt-4 max-h-[280px] overflow-y-auto px-4">
+        {items.length === 0 ? (
+          <p className="py-8 text-center font-body text-sm text-foreground/50">
+            Your cart is empty. Add items from the menu!
+          </p>
+        ) : (
+          <div className="space-y-3">
+            {items.map((cartItem) => (
+              <div key={cartItem.menuItem.id}>
+                <div className="flex items-start gap-3">
+                  {/* Thumbnail */}
+                  <div className="relative h-[50px] w-[50px] shrink-0 overflow-hidden rounded-full bg-gray-200">
+                    <Image
+                      src={cartItem.menuItem.image}
+                      alt={cartItem.menuItem.name}
+                      fill
+                      className="object-cover"
+                    />
+                  </div>
+
+                  {/* Details */}
+                  <div className="min-w-0 flex-1">
+                    <p className="font-body text-base">
+                      {cartItem.menuItem.name}
+                    </p>
+                    <p className="truncate font-body text-xs font-light text-foreground/60">
+                      {cartItem.menuItem.description}
+                    </p>
+
+                    {/* Qty controls */}
+                    <div className="mt-1 flex items-center gap-1">
+                      <button
+                        onClick={() =>
+                          updateQuantity(
+                            cartItem.menuItem.id,
+                            cartItem.quantity - 1,
+                          )
+                        }
+                        className="flex h-4 w-4 items-center justify-center rounded-sm border border-black/50"
+                        aria-label="Decrease quantity"
+                      >
+                        <Minus size={10} />
+                      </button>
+                      <span className="min-w-[18px] text-center font-body text-lg">
+                        {cartItem.quantity}
+                      </span>
+                      <button
+                        onClick={() =>
+                          updateQuantity(
+                            cartItem.menuItem.id,
+                            cartItem.quantity + 1,
+                          )
+                        }
+                        className="flex h-4 w-4 items-center justify-center rounded-sm bg-black text-white"
+                        aria-label="Increase quantity"
+                      >
+                        <Plus size={10} />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Actions */}
+                  <div className="flex shrink-0 gap-1.5">
+                    <button
+                      className="rounded-full border border-black/10 p-1"
+                      aria-label="Search"
+                    >
+                      <Search size={12} />
+                    </button>
+                    <button
+                      onClick={() => {
+                        removeItem(cartItem.menuItem.id);
+                        toast.info(
+                          `${cartItem.menuItem.name} removed from cart`,
+                        );
+                      }}
+                      className="rounded-full border border-black/10 p-1"
+                      aria-label="Remove item"
+                    >
+                      <Trash2 size={12} />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Divider */}
+                <div className="mt-3 border-t border-black/10" />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Add another food */}
+      <div className="mx-3 mt-3">
+        <Link
+          href="/menu"
+          className="block rounded-full border border-black/10 bg-[#eeeeee] py-2.5 text-center font-body text-sm"
+        >
+          add another food or extras +
+        </Link>
+      </div>
+
+      {/* Customer details */}
+      <div className="mt-4 space-y-3 px-3">
+        <div>
+          <label className="font-body text-base">Name</label>
+          <input
+            type="text"
+            value={customerName}
+            onChange={(e) => setCustomerName(e.target.value)}
+            placeholder="Enter your name"
+            className="mt-1 w-full rounded-full border border-black/10 px-4 py-3 font-body text-sm outline-none focus:border-primary"
+          />
+        </div>
+        <div>
+          <label className="font-body text-base">
+            Phone Number (number to be delivered to)
+          </label>
+          <input
+            type="tel"
+            value={customerPhone}
+            onChange={(e) => setCustomerPhone(e.target.value)}
+            placeholder="Enter your phone number"
+            className="mt-1 w-full rounded-full border border-black/10 px-4 py-3 font-body text-sm outline-none focus:border-primary"
+          />
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="mx-3 mt-4 border-t border-black" />
+
+      {/* Promo code */}
+      <div className="flex items-center justify-between px-3 pt-3">
+        <span className="font-body text-base">Promotion Code</span>
+        <div className="rounded-full border border-black/10 bg-[#eeeeee] px-4 py-1">
+          <input
+            type="text"
+            value={promoCode}
+            onChange={(e) => setPromoCode(e.target.value)}
+            placeholder="Code"
+            className="w-16 bg-transparent text-center font-body text-sm font-light outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="mx-3 mt-3 border-t border-black/10" />
+
+      {/* Notes */}
+      <div className="px-3 pt-3">
+        <span className="font-body text-base">Additional notes</span>
+      </div>
+
+      {/* Divider */}
+      <div className="mx-3 mt-3 border-t border-black/10" />
+
+      {/* Totals */}
+      <div className="mt-3 space-y-1.5 px-3">
+        <div className="flex justify-between font-body text-xs font-light">
+          <span>Sub Total</span>
+          <span>
+            <span className="mr-0.5 text-[10px]">GH₵</span>
+            {subtotal.toFixed(2)}
+          </span>
+        </div>
+        <div className="flex justify-between font-body text-xs font-light">
+          <span>Delivery Charge</span>
+          <span>
+            <span className="mr-0.5 text-[10px]">GH₵</span>
+            {deliveryCharge.toFixed(2)}
+          </span>
+        </div>
+      </div>
+
+      {/* Total divider */}
+      <div className="mx-3 mt-2 border-t border-black/10" />
+
+      <div className="flex items-center justify-between px-3 pt-2">
+        <span className="font-body text-lg font-medium">TOTAL</span>
+        <span className="font-body text-lg font-medium">
+          <span className="mr-0.5 text-sm">GH₵</span>
+          {total.toFixed(2)}
+        </span>
+      </div>
+
+      {/* Confirm Order */}
+      <div className="p-3">
+        <button
+          disabled={items.length === 0}
+          onClick={() => {
+            toast.success("Order confirmed! Your food is being prepared.", {
+              description: `Order total: GH₵${total.toFixed(2)}`,
+              duration: 5000,
+            });
+            clearCart();
+          }}
+          className="w-full rounded-full bg-[#eeeeee] py-2.5 font-body text-base font-bold transition-colors hover:bg-primary hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Confirm Order
+        </button>
+      </div>
+    </div>
+  );
+}
+
+===== components/shared/MenuCard.tsx =====
+"use client";
+
+import { useState } from "react";
+import Image from "next/image";
+import { Heart, Clock, Minus, Plus } from "lucide-react";
+import { motion } from "framer-motion";
+import { toast } from "sonner";
+import { MenuItem } from "@/types";
+import { useCart } from "@/lib/cart-context";
+import SoupProteinModal from "@/components/shared/SoupProteinModal";
+
+interface MenuCardProps {
+  item: MenuItem;
+}
+
+export default function MenuCard({ item }: MenuCardProps) {
+  const [qty, setQty] = useState(0);
+  const { addItem } = useCart();
+  const [showModal, setShowModal] = useState(false);
+
+  const [isFav, setIsFav] = useState(item.isFavorited ?? false);
+
+  const handleAddToCart = () => {
+    if (item.requiresProteinSelection) {
+      setShowModal(true);
+    } else {
+      addItem(item);
+      toast.success(`${item.name} added to cart`);
+    }
+  };
+
+  const toggleFavorite = () => {
+    setIsFav((prev) => !prev);
+    toast(!isFav ? "Added to favorites" : "Removed from favorites", {
+      icon: "❤️",
+    });
+  };
+
+  return (
+    <motion.div
+      whileHover={{ y: -6 }}
+      transition={{ duration: 0.25, ease: [0.25, 0.1, 0.25, 1] }}
+      className="relative mt-14 rounded-[20px] bg-white shadow-[0_0_4px_rgba(0,0,0,0.25)]"
+    >
+      {/* Food / Drink Image */}
+      <div className="absolute -top-14 left-1/2 z-10 flex h-[120px] w-[120px] -translate-x-1/2 items-center justify-center">
+        <div className="relative h-[120px] w-[120px] overflow-hidden rounded-full bg-gray-light">
+          <Image
+            src={item.image}
+            alt={item.name}
+            fill
+            className="object-cover"
+          />
+        </div>
+      </div>
+
+      {/* Favorite Icon */}
+      <button
+        onClick={toggleFavorite}
+        className="absolute right-5 top-6 flex h-[50px] w-[50px] items-center justify-center transition-transform hover:scale-110"
+        aria-label={isFav ? "Remove from favorites" : "Add to favorites"}
+      >
+        <Heart
+          size={32}
+          className={isFav ? "fill-primary-red text-primary-red" : "text-black"}
+          strokeWidth={isFav ? 0 : 1}
+        />
+      </button>
+
+      {/* Card Content */}
+      <div className="px-6 pb-6 pt-16">
+        {/* Title + Prep Time (food) or Title + Price (drinks) */}
+        <div className="flex items-center justify-between">
+          <h3 className="font-heading text-xl font-medium">{item.name}</h3>
+          {item.prepTime && (
+            <div className="flex items-center gap-1 text-foreground/70">
+              <Clock size={16} />
+              <span className="font-body text-base">{item.prepTime}</span>
+            </div>
+          )}
+          {item.isDrink && (
+            <div className="flex items-center gap-1">
+              <span className="font-body text-sm text-foreground/50">GH₵</span>
+              <span className="font-heading text-xl font-medium">
+                {item.price.toFixed(2)}
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Description (food only) */}
+        {item.description && (
+          <p className="mt-2 line-clamp-2 font-body text-base text-foreground/70">
+            {item.description}
+          </p>
+        )}
+
+        {/* Bottom row */}
+        <div
+          className={`flex items-center justify-between ${item.isDrink ? "mt-4" : "mt-6"}`}
+        >
+          {/* Left side: Price (food) or Quantity controls (drinks) */}
+          {item.isDrink ? (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setQty((q) => Math.max(0, q - 1))}
+                className="flex h-[25px] w-[25px] items-center justify-center rounded border border-black"
+                aria-label="Decrease quantity"
+              >
+                <Minus size={14} />
+              </button>
+              <span className="min-w-[16px] text-center font-body text-2xl">
+                {qty}
+              </span>
+              <button
+                onClick={() => setQty((q) => q + 1)}
+                className="flex h-[25px] w-[25px] items-center justify-center rounded bg-black text-white"
+                aria-label="Increase quantity"
+              >
+                <Plus size={14} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center gap-1">
+              <span className="font-body text-sm text-foreground/50">GH₵</span>
+              <span className="font-heading text-xl font-medium">
+                {item.price.toFixed(2)}
+              </span>
+            </div>
+          )}
+
+          <button
+            onClick={handleAddToCart}
+            className="flex items-center gap-2 rounded-[10px] bg-primary px-5 py-2.5 font-body text-lg text-white transition-colors hover:bg-primary/90"
+          >
+            {item.requiresProteinSelection ? "select protein" : "add to cart"}
+            <span className="text-xl">+</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Soup & Protein selection modal */}
+      {showModal && (
+        <SoupProteinModal item={item} onClose={() => setShowModal(false)} />
+      )}
+    </motion.div>
+  );
+}
+
+===== components/shared/CategoryTabs.tsx =====
+"use client";
+
+import { MenuCategory } from "@/types";
+
+const categories: MenuCategory[] = [
+  "Popular",
+  "Locals",
+  "Continental",
+  "Drinks",
+];
+
+interface CategoryTabsProps {
+  active: MenuCategory;
+  onChange: (category: MenuCategory) => void;
+}
+
+export default function CategoryTabs({ active, onChange }: CategoryTabsProps) {
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-4">
+      {categories.map((category) => (
+        <button
+          key={category}
+          onClick={() => onChange(category)}
+          className={`rounded-[10px] px-6 py-4 font-heading text-2xl font-semibold transition-colors ${
+            active === category
+              ? "bg-primary text-white"
+              : "text-black hover:text-primary"
+          }`}
+        >
+          {category}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+===== app/(user)/menu/page.tsx =====
+"use client";
+
+import { useState } from "react";
+import HeroSection from "@/components/shared/HeroSection";
+import LocationBar from "@/components/shared/LocationBar";
+import CategoryTabs from "@/components/shared/CategoryTabs";
+import MenuCard from "@/components/shared/MenuCard";
+import { menuItems } from "@/lib/mock-data";
+import { MenuCategory } from "@/types";
+import {
+  SlideUp,
+  StaggerContainer,
+  StaggerItem,
+} from "@/components/ui/Animations";
+
+export default function MenuPage() {
+  const [activeCategory, setActiveCategory] = useState<MenuCategory>("Popular");
+
+  const filteredItems = menuItems.filter((item) =>
+    item.category.includes(activeCategory),
+  );
+
+  return (
+    <>
+      {/* Hero */}
+      <HeroSection
+        image="/images/hero-menu.jpg"
+        imageAlt="Food of the Day - Banku with Soup"
+        title={
+          <>
+            Food of the
+            <br />
+            Day - Banku with Soup
+          </>
+        }
+        ctaLabel="Place Order"
+        ctaHref="/menu"
+      />
+
+      {/* Location / Dine-In Bar */}
+      <LocationBar />
+
+      {/* Menu Section */}
+      <section className="mx-auto max-w-7xl px-6 py-16 lg:px-12">
+        {/* Section Title */}
+        <SlideUp>
+          <h2 className="text-center font-heading text-2xl font-semibold">
+            Menu
+          </h2>
+        </SlideUp>
+
+        {/* Category Tabs */}
+        <div className="mt-8">
+          <CategoryTabs active={activeCategory} onChange={setActiveCategory} />
+        </div>
+
+        {/* Menu Cards Grid */}
+        <StaggerContainer className="mt-12 grid gap-8 pt-8 sm:grid-cols-2 lg:grid-cols-3">
+          {filteredItems.map((item) => (
+            <StaggerItem key={item.id}>
+              <MenuCard item={item} />
+            </StaggerItem>
+          ))}
+        </StaggerContainer>
+
+        {filteredItems.length === 0 && (
+          <p className="mt-12 text-center font-body text-lg text-foreground/50">
+            No items in this category yet. Check back soon!
+          </p>
+        )}
+      </section>
+    </>
+  );
+}
+
+===== components/shared/MenuOfTheDay.tsx =====
+"use client";
+
+import Image from "next/image";
+import Button from "@/components/ui/Button";
+import { dailySpecials, menuItems } from "@/lib/mock-data";
+import { SlideUp, FadeIn } from "@/components/ui/Animations";
+
+const featuredItems = menuItems.slice(0, 2);
+
+export default function MenuOfTheDay() {
+  return (
+    <section className="mx-auto max-w-7xl px-6 py-16 lg:px-12">
+      <div className="grid gap-12 lg:grid-cols-[1fr_1fr_1fr]">
+        {/* Featured Food Images */}
+        {featuredItems.map((item, i) => (
+          <SlideUp key={item.id} delay={i * 0.15}>
+            <div className="relative">
+              <div className="relative aspect-[395/483] w-full overflow-hidden rounded-lg">
+                <Image
+                  src={item.image}
+                  alt={item.name}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <p className="mt-4 font-heading text-xl font-medium">
+                {item.name}
+              </p>
+              <p className="mt-1 font-body text-base text-foreground/70">
+                {item.description}
+              </p>
+            </div>
+          </SlideUp>
+        ))}
+
+        {/* Menu of the Day Details */}
+        <FadeIn delay={0.3}>
+          <div>
+            <h2 className="font-heading text-[40px] font-bold leading-tight">
+              Menu of the Day
+            </h2>
+            <div className="mt-4 h-[2px] w-[70px] bg-black" />
+
+            <p className="mt-6 font-body text-lg leading-relaxed">
+              Need a break from the routine? Our daily special is designed to be
+              fast, fresh, and flavorful - perfect for a quick lunch that
+              doesn&apos;t compromise on quality.
+            </p>
+
+            {/* Today's Specials */}
+            <p className="mt-6 font-body text-lg font-medium underline">
+              Today&apos;s Specials
+            </p>
+
+            <div className="mt-4 space-y-6">
+              {dailySpecials.map((special) => (
+                <p key={special.title} className="font-body text-lg">
+                  <span className="font-medium">{special.title}</span>{" "}
+                  {special.description}
+                </p>
+              ))}
+            </div>
+
+            <div className="mt-8">
+              <Button href="/menu" size="sm">
+                Order
+              </Button>
+            </div>
+          </div>
+        </FadeIn>
+      </div>
+    </section>
+  );
+}
+
+===== components/shared/MenuGrid.tsx =====
+"use client";
+
+import MenuCard from "@/components/shared/MenuCard";
+import Button from "@/components/ui/Button";
+import { menuItems } from "@/lib/mock-data";
+import {
+  SlideUp,
+  StaggerContainer,
+  StaggerItem,
+} from "@/components/ui/Animations";
+
+const HOMEPAGE_LIMIT = 6;
+
+export default function MenuGrid() {
+  const previewItems = menuItems
+    .filter((i) => !i.isDrink)
+    .slice(0, HOMEPAGE_LIMIT);
+
+  return (
+    <section className="mx-auto max-w-7xl px-6 py-16 lg:px-12">
+      {/* Section Label */}
+      <SlideUp>
+        <h2 className="font-heading text-2xl font-semibold">Menu</h2>
+      </SlideUp>
+
+      {/* Grid of Menu Cards */}
+      <StaggerContainer className="mt-10 grid gap-8 pt-8 sm:grid-cols-2 lg:grid-cols-3">
+        {previewItems.map((item) => (
+          <StaggerItem key={item.id}>
+            <MenuCard item={item} />
+          </StaggerItem>
+        ))}
+      </StaggerContainer>
+
+      {/* View All Button */}
+      <SlideUp delay={0.2}>
+        <div className="mt-12 flex justify-center">
+          <Button
+            href="/menu"
+            variant="primary-light"
+            size="md"
+            className="w-full max-w-xl"
+          >
+            View all Menu
+          </Button>
+        </div>
+      </SlideUp>
+    </section>
+  );
+}
+
+===== components/shared/TestimonialsSection.tsx =====
+"use client";
+
+import Image from "next/image";
+import { Quote } from "lucide-react";
+import { testimonials } from "@/lib/mock-data";
+import {
+  SlideUp,
+  StaggerContainer,
+  StaggerItem,
+} from "@/components/ui/Animations";
+
+export default function TestimonialsSection() {
+  return (
+    <section className="mx-auto max-w-7xl px-6 py-16 lg:px-12">
+      {/* Section Label */}
+      <SlideUp>
+        <h2 className="font-heading text-2xl font-semibold">Testimonials</h2>
+      </SlideUp>
+
+      {/* Testimonial Cards */}
+      <StaggerContainer className="mt-10 grid gap-8 sm:grid-cols-2 lg:grid-cols-3">
+        {testimonials.map((testimonial) => (
+          <StaggerItem key={testimonial.id}>
+            <div className="flex flex-col">
+              {/* Quote Icon */}
+              <Quote size={40} className="text-gray-text" />
+
+              {/* Quote Text */}
+              <p className="mt-6 font-body text-base leading-relaxed">
+                {testimonial.quote}
+              </p>
+
+              {/* Author */}
+              <div className="mt-8 flex items-center gap-4">
+                <div className="relative h-[55px] w-[55px] overflow-hidden rounded-full">
+                  <Image
+                    src={testimonial.avatar}
+                    alt={testimonial.name}
+                    fill
+                    className="object-cover"
+                  />
+                </div>
+                <div>
+                  <p className="font-body text-base font-medium">
+                    {testimonial.name}
+                  </p>
+                  <p className="font-body text-base text-foreground/70 whitespace-pre-line">
+                    {testimonial.role}
+                  </p>
+                </div>
+              </div>
+            </div>
+          </StaggerItem>
+        ))}
+      </StaggerContainer>
+    </section>
+  );
+}
+
+===== components/shared/LocationBar.tsx =====
+import { MapPin, ChevronDown } from "lucide-react";
+
+export default function LocationBar() {
+  return (
+    <div className="relative z-10 mx-auto -mt-11 max-w-2xl px-6 lg:px-0">
+      <div className="flex items-center overflow-hidden rounded-[10px] border border-black/20 bg-white shadow-sm">
+        {/* Location */}
+        <div className="flex flex-1 items-center gap-3 px-6 py-6">
+          <MapPin size={20} className="shrink-0 text-black" />
+          <span className="font-body text-xl">Akuafo Main Hall, UG, Legon</span>
+        </div>
+
+        {/* Divider */}
+        <div className="h-[50px] w-px bg-black" />
+
+        {/* Dine In Dropdown */}
+        <div className="flex items-center gap-2 px-6 py-6">
+          <span className="font-body text-xl">Dine In</span>
+          <ChevronDown size={20} className="text-black" />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+===== next.config.ts =====
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "placehold.co",
+      },
+    ],
+  },
+};
+
+export default nextConfig;
+
+===== lib/api.ts =====
+// 📁 lib/api.ts
+
+import axios, {
+  AxiosError,
+  AxiosInstance,
+  AxiosRequestConfig,
+  AxiosResponse,
+  InternalAxiosRequestConfig,
+} from "axios";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+export interface ApiErrorResponse {
+  message: string;
+  statusCode: number;
+  errors?: Record<string, string[]>; // field-level validation errors from the API
+}
+
+export class ApiError extends Error {
+  statusCode: number;
+  errors?: Record<string, string[]>;
+
+  constructor(
+    message: string,
+    statusCode: number,
+    errors?: Record<string, string[]>,
+  ) {
+    super(message);
+    this.name = "ApiError";
+    this.statusCode = statusCode;
+    this.errors = errors;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Axios instance
+// ---------------------------------------------------------------------------
+
+const api: AxiosInstance = axios.create({
+  baseURL: process.env.NEXT_PUBLIC_API_URL,
+  withCredentials: true, // send/receive httpOnly JWT cookies
+  headers: {
+    "Content-Type": "application/json",
+    "X-API-Key": process.env.NEXT_PUBLIC_API_KEY ?? "",
+  },
+  timeout: 15_000,
+});
+
+// ---------------------------------------------------------------------------
+// 401 refresh interceptor
+// ---------------------------------------------------------------------------
+
+let isRefreshing = false;
+let refreshQueue: Array<{
+  resolve: (value: unknown) => void;
+  reject: (reason?: unknown) => void;
+}> = [];
+
+/** Drain the queue after a refresh attempt */
+function drainQueue(error: unknown, token?: string) {
+  refreshQueue.forEach(({ resolve, reject }) => {
+    if (error) {
+      reject(error);
+    } else {
+      resolve(token);
+    }
+  });
+  refreshQueue = [];
+}
+
+api.interceptors.response.use(
+  // Pass successful responses straight through
+  (response: AxiosResponse) => response,
+
+  async (error: AxiosError<ApiErrorResponse>) => {
+    const originalRequest = error.config as InternalAxiosRequestConfig & {
+      _retry?: boolean;
+    };
+
+    const status = error.response?.status;
+
+    // Only attempt a refresh once per request, and only for 401s
+    // Skip refresh if the failing request IS the refresh endpoint (avoid infinite loop)
+    if (
+      status === 401 &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/auth/refresh")
+    ) {
+      if (isRefreshing) {
+        // Queue this request until the in-flight refresh resolves
+        return new Promise((resolve, reject) => {
+          refreshQueue.push({ resolve, reject });
+        }).then(() => api(originalRequest));
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      try {
+        await api.post("/auth/refresh");
+        drainQueue(null);
+        return api(originalRequest);
+      } catch (refreshError) {
+        drainQueue(refreshError);
+        // Refresh failed — the auth context will handle redirecting to /login
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
+    }
+
+    // Normalize all API errors into ApiError instances
+    const message =
+      error.response?.data?.message ??
+      error.message ??
+      "An unexpected error occurred";
+    const statusCode = error.response?.status ?? 0;
+    const errors = error.response?.data?.errors;
+
+    return Promise.reject(new ApiError(message, statusCode, errors));
+  },
+);
+
+// ---------------------------------------------------------------------------
+// Typed convenience wrappers
+// ---------------------------------------------------------------------------
+
+export async function get<T>(
+  url: string,
+  config?: AxiosRequestConfig,
+): Promise<T> {
+  const response = await api.get<T>(url, config);
+  return response.data;
+}
+
+export async function post<T>(
+  url: string,
+  data?: unknown,
+  config?: AxiosRequestConfig,
+): Promise<T> {
+  const response = await api.post<T>(url, data, config);
+  return response.data;
+}
+
+export async function patch<T>(
+  url: string,
+  data?: unknown,
+  config?: AxiosRequestConfig,
+): Promise<T> {
+  const response = await api.patch<T>(url, data, config);
+  return response.data;
+}
+
+export async function put<T>(
+  url: string,
+  data?: unknown,
+  config?: AxiosRequestConfig,
+): Promise<T> {
+  const response = await api.put<T>(url, data, config);
+  return response.data;
+}
+
+export async function del<T>(
+  url: string,
+  config?: AxiosRequestConfig,
+): Promise<T> {
+  const response = await api.delete<T>(url, config);
+  return response.data;
+}
+
+export default api;
+
+===== lib/auth-context.tsx =====
+// 📁 lib/auth-context.tsx
+
+"use client";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
+import { useRouter } from "next/navigation";
+import { get, post, ApiError } from "@/lib/api";
+
+// ---------------------------------------------------------------------------
+// Types — matching GET /auth/me response shape exactly
+// ---------------------------------------------------------------------------
+
+export interface UserRole {
+  _id: string;
+  name: string;
+  permissions: string[];
+}
+
+export interface User {
+  _id: string;
+  name: string;
+  email: string;
+  authMethod: "local" | "google" | "apple";
+  role: UserRole;
+  phoneNumber?: string;
+  avatar: string | null;
+  emailVerified: boolean;
+  addresses: string[];
+  defaultAddress?: string;
+  active: boolean;
+  lastLoginAt: string;
+  createdAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Request / Response payload types
+// ---------------------------------------------------------------------------
+
+interface SignupPayload {
+  name: string;
+  email: string;
+  password: string;
+  passwordConfirm: string;
+  phoneNumber?: string;
+}
+
+interface LoginPayload {
+  email: string;
+  password: string;
+}
+
+interface UpdateProfilePayload {
+  name?: string;
+  phoneNumber?: string;
+  avatar?: string;
+}
+
+interface AuthMeResponse {
+  status: string;
+  data: { user: User };
+}
+
+interface SignupResponse {
+  status: string;
+  message: string;
+  data: { user: User };
+}
+
+// ---------------------------------------------------------------------------
+// Context shape
+// ---------------------------------------------------------------------------
+
+interface AuthContextValue {
+  user: User | null;
+  isLoading: boolean;          // true while the initial /auth/me check is in flight
+  isAuthenticated: boolean;
+  isAdmin: boolean;            // true if role.name !== "customer"
+  hasPermission: (permission: string) => boolean;
+  login: (payload: LoginPayload) => Promise<void>;
+  signup: (payload: SignupPayload) => Promise<User>;
+  logout: () => Promise<void>;
+  googleLogin: (idToken: string) => Promise<void>;
+  appleLogin: (identityToken: string, user?: AppleUser) => Promise<void>;
+  refreshUser: () => Promise<void>;  // re-fetches /auth/me — useful after profile updates
+}
+
+interface AppleUser {
+  name?: { firstName?: string; lastName?: string };
+  email?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Context
+// ---------------------------------------------------------------------------
+
+const AuthContext = createContext<AuthContextValue | null>(null);
+
+// ---------------------------------------------------------------------------
+// Provider
+// ---------------------------------------------------------------------------
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const router = useRouter();
+
+  // Fetch the current user — called on mount and after profile updates
+  const fetchUser = useCallback(async () => {
+    try {
+      const response = await get<AuthMeResponse>("/auth/me");
+      setUser(response.data.user);
+    } catch (error) {
+      // 401 means no valid session — that's expected for logged-out users
+      if (error instanceof ApiError && error.statusCode === 401) {
+        setUser(null);
+      } else {
+        // Unexpected error — still clear the user so the UI stays consistent
+        setUser(null);
+        console.error("[AuthContext] Failed to fetch user:", error);
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // On mount: check if a session already exists (cookie may still be valid)
+  useEffect(() => {
+    fetchUser();
+  }, [fetchUser]);
+
+  // ── Auth actions ──────────────────────────────────────────────────────────
+
+  const login = useCallback(
+    async (payload: LoginPayload) => {
+      // POST /auth/login sets cookies automatically — no token in response body
+      await post("/auth/login", payload);
+      // Fetch the user profile now that cookies are set
+      await fetchUser();
+    },
+    [fetchUser]
+  );
+
+  const signup = useCallback(async (payload: SignupPayload): Promise<User> => {
+    const response = await post<SignupResponse>("/auth/signup", payload);
+    // Signup also sets cookies — user is logged in immediately
+    setUser(response.data.user);
+    return response.data.user;
+  }, []);
+
+  const logout = useCallback(async () => {
+    try {
+      await post("/auth/logout");
+    } finally {
+      // Always clear local state even if the request fails
+      setUser(null);
+      router.push("/");
+    }
+  }, [router]);
+
+  const googleLogin = useCallback(
+    async (idToken: string) => {
+      await post("/auth/google", { idToken });
+      await fetchUser();
+    },
+    [fetchUser]
+  );
+
+  const appleLogin = useCallback(
+    async (identityToken: string, appleUser?: AppleUser) => {
+      await post("/auth/apple", { identityToken, user: appleUser });
+      await fetchUser();
+    },
+    [fetchUser]
+  );
+
+  const refreshUser = useCallback(async () => {
+    await fetchUser();
+  }, [fetchUser]);
+
+  // ── Derived state ─────────────────────────────────────────────────────────
+
+  const isAuthenticated = user !== null;
+
+  // Any role other than "customer" (e.g. "admin", "super_admin", "rider") is
+  // considered an admin for the purpose of showing the admin panel
+  const isAdmin = isAuthenticated && user!.role.name !== "customer";
+
+  const hasPermission = useCallback(
+    (permission: string) => {
+      if (!user) return false;
+      return user.role.permissions.includes(permission);
+    },
+    [user]
+  );
+
+  // ── Context value (memoized to prevent unnecessary re-renders) ────────────
+
+  const value = useMemo<AuthContextValue>(
+    () => ({
+      user,
+      isLoading,
+      isAuthenticated,
+      isAdmin,
+      hasPermission,
+      login,
+      signup,
+      logout,
+      googleLogin,
+      appleLogin,
+      refreshUser,
+    }),
+    [
+      user,
+      isLoading,
+      isAuthenticated,
+      isAdmin,
+      hasPermission,
+      login,
+      signup,
+      logout,
+      googleLogin,
+      appleLogin,
+      refreshUser,
+    ]
+  );
+
+  return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
+}
+
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
+
+export function useAuth(): AuthContextValue {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error("useAuth must be used inside <AuthProvider>");
+  }
+  return context;
+}
+===== lib/cart-context.tsx =====
+// 📁 lib/cart-context.tsx
+
+"use client";
+
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+import { get, post, patch, del } from "@/lib/api";
+import { useAuth } from "@/lib/auth-context";
+import type { Cart, CartItem, LocalCartItem, MenuItem } from "@/types";
+
+// ---------------------------------------------------------------------------
+// Types
+// ---------------------------------------------------------------------------
+
+interface CartContextValue {
+  // Items — unified view regardless of auth state
+  items: LocalCartItem[];
+  totalAmount: number;
+  itemCount: number;
+  isLoading: boolean;
+
+  // Actions
+  addItem: (
+    item: MenuItem,
+    quantity?: number,
+    customization?: string,
+  ) => Promise<void>;
+  updateQuantity: (menuItemId: string, quantity: number) => Promise<void>;
+  removeItem: (menuItemId: string) => Promise<void>;
+  clearCart: () => Promise<void>;
+
+  // Cart panel UI state
+  isOpen: boolean;
+  openCart: () => void;
+  closeCart: () => void;
+}
+
+// ---------------------------------------------------------------------------
+// Helpers
+// ---------------------------------------------------------------------------
+
+const LOCAL_CART_KEY = "ek_cart";
+
+function loadLocalCart(): LocalCartItem[] {
+  if (typeof window === "undefined") return [];
+  try {
+    const raw = localStorage.getItem(LOCAL_CART_KEY);
+    return raw ? JSON.parse(raw) : [];
+  } catch {
+    return [];
+  }
+}
+
+function saveLocalCart(items: LocalCartItem[]) {
+  if (typeof window === "undefined") return;
+  localStorage.setItem(LOCAL_CART_KEY, JSON.stringify(items));
+}
+
+function serverCartToLocal(cart: Cart): LocalCartItem[] {
+  return cart.items.map((item: CartItem) => ({
+    menuItemId: item.menuItem._id,
+    name: item.menuItem.name,
+    price: item.unitPrice,
+    image: item.menuItem.images?.[0] ?? "",
+    quantity: item.quantity,
+  }));
+}
+
+// ---------------------------------------------------------------------------
+// Context
+// ---------------------------------------------------------------------------
+
+const CartContext = createContext<CartContextValue | null>(null);
+
+// ---------------------------------------------------------------------------
+// Provider
+// ---------------------------------------------------------------------------
+
+export function CartProvider({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth();
+  const [items, setItems] = useState<LocalCartItem[]>([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+
+  // Track previous auth state to detect login events
+  const prevAuthRef = useRef(isAuthenticated);
+
+  // ── Load cart ─────────────────────────────────────────────────────────────
+
+  const loadServerCart = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const res = await get<{ status: string; data: { cart: Cart } }>("/cart");
+      setItems(serverCartToLocal(res.data.cart));
+    } catch {
+      // Empty or error — keep current items
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  // On mount: load from localStorage if not authenticated
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setItems(loadLocalCart());
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // On login: merge local cart into server cart, then load server cart
+  useEffect(() => {
+    const wasLoggedOut = !prevAuthRef.current;
+    const isNowLoggedIn = isAuthenticated;
+
+    if (wasLoggedOut && isNowLoggedIn) {
+      const localItems = loadLocalCart();
+
+      const mergeAndLoad = async () => {
+        setIsLoading(true);
+        try {
+          // Add each local item to the server cart
+          for (const item of localItems) {
+            await post("/cart/items", {
+              menuItem: item.menuItemId,
+              quantity: item.quantity,
+            }).catch(() => {}); // best-effort — skip items that fail
+          }
+          // Clear local storage after merge
+          saveLocalCart([]);
+          // Load the merged server cart
+          await loadServerCart();
+        } finally {
+          setIsLoading(false);
+        }
+      };
+
+      mergeAndLoad();
+    }
+
+    // On logout: switch to local cart (will be empty since we cleared it)
+    if (!isAuthenticated && prevAuthRef.current) {
+      setItems(loadLocalCart());
+    }
+
+    prevAuthRef.current = isAuthenticated;
+  }, [isAuthenticated, loadServerCart]);
+
+  // Persist local cart to localStorage whenever items change (anonymous only)
+  useEffect(() => {
+    if (!isAuthenticated) {
+      saveLocalCart(items);
+    }
+  }, [items, isAuthenticated]);
+
+  // ── Cart actions ──────────────────────────────────────────────────────────
+
+  const addItem = useCallback(
+    async (menuItem: MenuItem, quantity = 1, customization?: string) => {
+      if (isAuthenticated) {
+        setIsLoading(true);
+        try {
+          const res = await post<{ status: string; data: { cart: Cart } }>(
+            "/cart/items",
+            { menuItem: menuItem._id, quantity },
+          );
+          setItems(serverCartToLocal(res.data.cart));
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setItems((prev) => {
+          const existing = prev.find((i) => i.menuItemId === menuItem._id);
+          if (existing) {
+            return prev.map((i) =>
+              i.menuItemId === menuItem._id
+                ? { ...i, quantity: i.quantity + quantity }
+                : i,
+            );
+          }
+          return [
+            ...prev,
+            {
+              menuItemId: menuItem._id,
+              name: menuItem.name,
+              price: menuItem.price,
+              image: menuItem.images?.[0] ?? "",
+              quantity,
+              customization,
+            },
+          ];
+        });
+      }
+    },
+    [isAuthenticated],
+  );
+
+  const updateQuantity = useCallback(
+    async (menuItemId: string, quantity: number) => {
+      if (quantity < 1) return;
+
+      if (isAuthenticated) {
+        setIsLoading(true);
+        try {
+          const res = await patch<{ status: string; data: { cart: Cart } }>(
+            `/cart/items/${menuItemId}`,
+            { quantity },
+          );
+          setItems(serverCartToLocal(res.data.cart));
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setItems((prev) =>
+          prev.map((i) =>
+            i.menuItemId === menuItemId ? { ...i, quantity } : i,
+          ),
+        );
+      }
+    },
+    [isAuthenticated],
+  );
+
+  const removeItem = useCallback(
+    async (menuItemId: string) => {
+      if (isAuthenticated) {
+        setIsLoading(true);
+        try {
+          const res = await del<{ status: string; data: { cart: Cart } }>(
+            `/cart/items/${menuItemId}`,
+          );
+          setItems(serverCartToLocal(res.data.cart));
+        } finally {
+          setIsLoading(false);
+        }
+      } else {
+        setItems((prev) => prev.filter((i) => i.menuItemId !== menuItemId));
+      }
+    },
+    [isAuthenticated],
+  );
+
+  const clearCart = useCallback(async () => {
+    if (isAuthenticated) {
+      setIsLoading(true);
+      try {
+        await del("/cart");
+        setItems([]);
+      } finally {
+        setIsLoading(false);
+      }
+    } else {
+      setItems([]);
+      saveLocalCart([]);
+    }
+  }, [isAuthenticated]);
+
+  // ── Derived values ────────────────────────────────────────────────────────
+
+  const totalAmount = useMemo(
+    () => items.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    [items],
+  );
+
+  const itemCount = useMemo(
+    () => items.reduce((sum, item) => sum + item.quantity, 0),
+    [items],
+  );
+
+  const openCart = useCallback(() => setIsOpen(true), []);
+  const closeCart = useCallback(() => setIsOpen(false), []);
+
+  const value = useMemo<CartContextValue>(
+    () => ({
+      items,
+      totalAmount,
+      itemCount,
+      isLoading,
+      addItem,
+      updateQuantity,
+      removeItem,
+      clearCart,
+      isOpen,
+      openCart,
+      closeCart,
+    }),
+    [
+      items,
+      totalAmount,
+      itemCount,
+      isLoading,
+      addItem,
+      updateQuantity,
+      removeItem,
+      clearCart,
+      isOpen,
+      openCart,
+      closeCart,
+    ],
+  );
+
+  return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
+}
+
+// ---------------------------------------------------------------------------
+// Hook
+// ---------------------------------------------------------------------------
+
+export function useCart(): CartContextValue {
+  const context = useContext(CartContext);
+  if (!context) {
+    throw new Error("useCart must be used inside <CartProvider>");
+  }
+  return context;
+}
+
+===== lib/hooks/useMenu.ts =====
+// 📁 lib/hooks/useMenu.ts
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { get, post } from "@/lib/api";
+import type {
+  Category,
+  MenuItem,
+  MenuItemFilters,
+  MenuItemsResponse,
+  DailySpecial,
+  ApiListResponse,
+  ApiResponse,
+} from "@/types";
+
+// ---------------------------------------------------------------------------
+// Query keys — centralised so invalidations are consistent
+// ---------------------------------------------------------------------------
+
+export const queryKeys = {
+  categories: ["categories"] as const,
+  menuItems: (filters?: MenuItemFilters) =>
+    filters ? ["menu-items", filters] : ["menu-items"],
+  menuItem: (idOrSlug: string) => ["menu-items", idOrSlug] as const,
+  dailySpecials: ["daily-specials", "today"] as const,
+  likeStatus: (menuItemId: string) => ["likes", "status", menuItemId] as const,
+};
+
+// ---------------------------------------------------------------------------
+// Categories
+// ---------------------------------------------------------------------------
+
+export function useCategories() {
+  return useQuery({
+    queryKey: queryKeys.categories,
+    queryFn: () =>
+      get<ApiListResponse<{ categories: Category[] }>>("/categories").then(
+        (res) => res.data.categories,
+      ),
+    staleTime: 10 * 60 * 1000, // categories rarely change — cache for 10 min
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Menu Items
+// ---------------------------------------------------------------------------
+
+export function useMenuItems(filters: MenuItemFilters = {}) {
+  return useQuery({
+    queryKey: queryKeys.menuItems(filters),
+    queryFn: () =>
+      get<MenuItemsResponse>("/menu-items", { params: filters }).then(
+        (res) => res.data,
+      ),
+  });
+}
+
+export function useMenuItem(idOrSlug: string) {
+  const isId = /^[a-f\d]{24}$/i.test(idOrSlug);
+  const url = isId ? `/menu-items/${idOrSlug}` : `/menu-items/slug/${idOrSlug}`;
+
+  return useQuery({
+    queryKey: queryKeys.menuItem(idOrSlug),
+    queryFn: () =>
+      get<ApiResponse<{ menuItem: MenuItem }>>(url).then(
+        (res) => res.data.menuItem,
+      ),
+    enabled: Boolean(idOrSlug),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Daily Specials
+// ---------------------------------------------------------------------------
+
+export function useDailySpecials() {
+  return useQuery({
+    queryKey: queryKeys.dailySpecials,
+    queryFn: () =>
+      get<ApiListResponse<{ dailySpecials: DailySpecial[] }>>(
+        "/daily-specials/today",
+      ).then((res) => res.data.dailySpecials),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Likes
+// ---------------------------------------------------------------------------
+
+export function useLikeStatus(menuItemId: string, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.likeStatus(menuItemId),
+    queryFn: () =>
+      get<ApiResponse<{ liked: boolean }>>(`/likes/${menuItemId}/status`).then(
+        (res) => res.data.liked,
+      ),
+    enabled: Boolean(menuItemId) && enabled,
+  });
+}
+
+export function useToggleLike() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (menuItemId: string) =>
+      post<ApiResponse<{ liked: boolean; likes: number }>>(
+        `/likes/${menuItemId}`,
+      ),
+    onSuccess: (data, menuItemId) => {
+      // Update like status cache
+      queryClient.setQueryData(
+        queryKeys.likeStatus(menuItemId),
+        data.data.liked,
+      );
+      // Invalidate menu item so likes count refreshes
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.menuItem(menuItemId),
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.menuItems() });
+    },
+  });
+}
+
+===== lib/hooks/useOrders.ts =====
+// 📁 lib/hooks/useOrders.ts
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { get, post } from "@/lib/api";
+import type {
+  Order,
+  CreateOrderPayload,
+  PaystackInitializeResponse,
+  ApiResponse,
+  ApiListResponse,
+  Pagination,
+} from "@/types";
+
+export const orderKeys = {
+  myOrders: (filters?: Record<string, unknown>) =>
+    filters ? ["orders", "my", filters] : ["orders", "my"],
+  detail: (id: string) => ["orders", id] as const,
+};
+
+// ---------------------------------------------------------------------------
+// Customer order history
+// ---------------------------------------------------------------------------
+
+export function useMyOrders(filters: Record<string, unknown> = {}) {
+  return useQuery({
+    queryKey: orderKeys.myOrders(filters),
+    queryFn: () =>
+      get<ApiListResponse<{ orders: Order[]; pagination: Pagination }>>(
+        "/orders/my",
+        { params: filters },
+      ).then((res) => res.data),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Single order detail
+// ---------------------------------------------------------------------------
+
+export function useOrder(id: string) {
+  return useQuery({
+    queryKey: orderKeys.detail(id),
+    queryFn: () =>
+      get<ApiResponse<{ order: Order }>>(`/orders/${id}`).then(
+        (res) => res.data.order,
+      ),
+    enabled: Boolean(id),
+    // Poll every 30s for active orders so status updates appear automatically
+    refetchInterval: (query) => {
+      const order = query.state.data;
+      if (!order) return false;
+      const activeStatuses = [
+        "pending",
+        "confirmed",
+        "preparing",
+        "ready_for_pickup",
+        "out_for_delivery",
+      ];
+      return activeStatuses.includes(order.status) ? 30_000 : false;
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Place order
+// ---------------------------------------------------------------------------
+
+export function usePlaceOrder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateOrderPayload) =>
+      post<ApiResponse<{ order: Order }>>("/orders", payload).then(
+        (res) => res.data.order,
+      ),
+    onSuccess: () => {
+      // Invalidate order history so the new order appears
+      queryClient.invalidateQueries({ queryKey: orderKeys.myOrders() });
+      // Cart is cleared server-side after order — invalidate cart cache too
+      queryClient.invalidateQueries({ queryKey: ["cart"] });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Cancel order
+// ---------------------------------------------------------------------------
+
+export function useCancelOrder() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => post(`/orders/${id}/cancel`),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: orderKeys.detail(id) });
+      queryClient.invalidateQueries({ queryKey: orderKeys.myOrders() });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Initialize Paystack payment
+// ---------------------------------------------------------------------------
+
+export function useInitializePayment() {
+  return useMutation({
+    mutationFn: (orderId: string) =>
+      post<PaystackInitializeResponse>("/payments/paystack/initialize", {
+        orderId,
+      }),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Verify Paystack payment (called from callback page)
+// ---------------------------------------------------------------------------
+
+export function useVerifyPayment(reference: string) {
+  return useQuery({
+    queryKey: ["payments", "verify", reference],
+    queryFn: () =>
+      get<ApiResponse<{ payment: { status: string; order: string } }>>(
+        `/payments/paystack/verify/${reference}`,
+      ).then((res) => res.data),
+    enabled: Boolean(reference),
+    retry: 3,
+    retryDelay: 2000,
+  });
+}
+
+===== lib/hooks/useAddresses.ts =====
+// 📁 lib/hooks/useAddresses.ts
+
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { get, post, patch, del } from "@/lib/api";
+import type {
+  Address,
+  CreateAddressPayload,
+  ApiListResponse,
+  ApiResponse,
+} from "@/types";
+
+export const addressKeys = {
+  all: ["addresses"] as const,
+  detail: (id: string) => ["addresses", id] as const,
+};
+
+// ---------------------------------------------------------------------------
+// Fetch all addresses
+// ---------------------------------------------------------------------------
+
+export function useAddresses() {
+  return useQuery({
+    queryKey: addressKeys.all,
+    queryFn: () =>
+      get<ApiListResponse<{ addresses: Address[] }>>("/addresses").then(
+        (res) => res.data.addresses,
+      ),
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Create address
+// ---------------------------------------------------------------------------
+
+export function useCreateAddress() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (payload: CreateAddressPayload) =>
+      post<ApiResponse<{ address: Address }>>("/addresses", payload).then(
+        (res) => res.data.address,
+      ),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: addressKeys.all });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Update address
+// ---------------------------------------------------------------------------
+
+export function useUpdateAddress() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string;
+      payload: Partial<CreateAddressPayload>;
+    }) =>
+      patch<ApiResponse<{ address: Address }>>(
+        `/addresses/${id}`,
+        payload,
+      ).then((res) => res.data.address),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: addressKeys.all });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Delete address
+// ---------------------------------------------------------------------------
+
+export function useDeleteAddress() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (id: string) => del(`/addresses/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: addressKeys.all });
+    },
+  });
+}
+
+===== types/index.ts =====
+// 📁 types/index.ts
+
+// ---------------------------------------------------------------------------
+// Enums & union types
+// ---------------------------------------------------------------------------
+
+export type OrderStatus =
+  | "pending"
+  | "confirmed"
+  | "preparing"
+  | "ready_for_pickup"
+  | "out_for_delivery"
+  | "delivered"
+  | "cancelled";
+
+export type ReservationStatus =
+  | "pending"
+  | "confirmed"
+  | "seated"
+  | "completed"
+  | "cancelled"
+  | "no_show";
+
+export type PaymentMethod = "mobile_money" | "card" | "cash_on_delivery";
+
+export type PaymentStatus =
+  | "initiated"
+  | "pending"
+  | "success"
+  | "failed"
+  | "refunded";
+
+export type AuthMethod = "local" | "google" | "apple";
+
+// ---------------------------------------------------------------------------
+// Shared
+// ---------------------------------------------------------------------------
+
+export interface Pagination {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
+// ---------------------------------------------------------------------------
+// Auth / User
+// ---------------------------------------------------------------------------
+
+export interface Role {
+  _id: string;
+  name: string;
+  permissions: string[];
+}
+
+export interface User {
+  _id: string;
+  name: string;
+  email: string;
+  authMethod: AuthMethod;
+  role: Role;
+  avatar?: string;
+  phoneNumber?: string;
+  addresses: Address[];
+  defaultAddress?: string;
+  emailVerified: boolean;
+  active: boolean;
+  lastLoginAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Category
+// ---------------------------------------------------------------------------
+
+export interface Category {
+  _id: string;
+  name: string;
+  slug: string;
+  description?: string;
+  image?: string;
+  isActive: boolean;
+  sortOrder: number;
+  createdAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Menu Item
+// ---------------------------------------------------------------------------
+
+export interface NutritionalInfo {
+  calories?: number;
+  protein?: number;
+  carbs?: number;
+  fat?: number;
+}
+
+export interface MenuItem {
+  _id: string;
+  name: string;
+  slug: string;
+  description: string;
+  price: number; // GHS
+  currency: string;
+  category: Category; // populated
+  images: string[];
+  preparationTime: number; // minutes
+  ingredients: string[];
+  allergens: string[];
+  nutritionalInfo?: NutritionalInfo;
+  isAvailable: boolean;
+  isFeatured: boolean;
+  likes: number;
+  averageRating: number;
+  totalReviews: number;
+  createdAt: string;
+}
+
+export interface MenuItemsResponse {
+  status: string;
+  results: number;
+  data: {
+    items: MenuItem[];
+    pagination: Pagination;
+  };
+}
+
+export interface MenuItemFilters {
+  category?: string;
+  search?: string;
+  minPrice?: number;
+  maxPrice?: number;
+  isAvailable?: boolean;
+  isFeatured?: boolean;
+  page?: number;
+  limit?: number;
+  sort?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Daily Special
+// ---------------------------------------------------------------------------
+
+export interface DailySpecial {
+  _id: string;
+  title: string;
+  description: string;
+  menuItem: Pick<MenuItem, "_id" | "name" | "price" | "images">;
+  date: string;
+  isActive: boolean;
+  sortOrder: number;
+}
+
+// ---------------------------------------------------------------------------
+// Address
+// ---------------------------------------------------------------------------
+
+export interface Coordinates {
+  type: "Point";
+  coordinates: [number, number]; // [lng, lat]
+}
+
+export interface Address {
+  _id: string;
+  user: string;
+  label?: string; // "Home", "Office"
+  location: string;
+  landmark?: string;
+  gpsAddress?: string; // "GA-457-1234"
+  coordinates?: Coordinates;
+  phoneNumber: string;
+  isDefault: boolean;
+}
+
+export interface CreateAddressPayload {
+  label?: string;
+  location: string;
+  landmark?: string;
+  gpsAddress?: string;
+  coordinates?: Coordinates;
+  phoneNumber: string;
+  isDefault?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Cart
+// ---------------------------------------------------------------------------
+
+export interface CartItem {
+  menuItem: Pick<MenuItem, "_id" | "name" | "price" | "images">;
+  quantity: number;
+  unitPrice: number;
+  addedAt: string;
+}
+
+export interface Cart {
+  _id: string;
+  user: string;
+  items: CartItem[];
+  totalAmount: number;
+}
+
+// Client-side cart item (used for anonymous/local cart)
+export interface LocalCartItem {
+  menuItemId: string;
+  name: string;
+  price: number;
+  image: string;
+  quantity: number;
+  // Soup/protein customization — serialized into order notes on checkout
+  customization?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Order
+// ---------------------------------------------------------------------------
+
+export interface OrderItem {
+  menuItem: string;
+  name: string; // snapshot
+  quantity: number;
+  unitPrice: number;
+  lineTotal: number;
+}
+
+export interface DeliveryAddress {
+  sourceAddressId?: string;
+  customerName: string;
+  addressLabel?: string;
+  location: string;
+  landmark?: string;
+  gpsAddress?: string;
+  phoneNumber: string;
+}
+
+export interface StatusHistoryEntry {
+  status: string;
+  changedBy?: string;
+  changedAt: string;
+  note?: string;
+}
+
+export interface DeliveryCoordinates {
+  latitude: number;
+  longitude: number;
+  accuracy?: number;
+  capturedAt: string;
+}
+
+export interface Order {
+  _id: string;
+  orderNumber: string; // "EK-YYYYMMDD-XXXX"
+  user: string;
+  items: OrderItem[];
+  deliveryAddress: DeliveryAddress;
+  deliveryFee: number;
+  subtotal: number;
+  processingFee: number;
+  tax: number;
+  totalAmount: number;
+  status: OrderStatus;
+  statusHistory: StatusHistoryEntry[];
+  paymentMethod: PaymentMethod;
+  paymentStatus: PaymentStatus;
+  assignedRider?: string;
+  estimatedDelivery?: string;
+  deliveredAt?: string;
+  notes?: string;
+  cancellationReason?: string;
+  deliveryCoordinates?: DeliveryCoordinates;
+  areaName?: string;
+  liveLocationUpdatedAt?: string;
+  createdAt: string;
+}
+
+export interface CreateOrderPayload {
+  addressId?: string;
+  paymentMethod: PaymentMethod;
+  notes?: string;
+}
+
+// ---------------------------------------------------------------------------
+// Payment
+// ---------------------------------------------------------------------------
+
+export interface Payment {
+  _id: string;
+  order: string;
+  user: string;
+  amount: number;
+  currency: string;
+  method: PaymentMethod;
+  provider?: string;
+  providerRef?: string;
+  status: PaymentStatus;
+  paidAt?: string;
+  refundedAt?: string;
+  refundAmount?: number;
+  createdAt: string;
+}
+
+export interface PaystackInitializeResponse {
+  status: string;
+  data: {
+    payment: Payment;
+    authorizationUrl: string;
+    reference: string;
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Testimonial
+// ---------------------------------------------------------------------------
+
+export interface Testimonial {
+  _id: string;
+  user: {
+    _id: string;
+    name: string;
+    avatar?: string;
+  };
+  content: string;
+  rating: number; // 1–5
+  menuItem?: {
+    _id: string;
+    name: string;
+  };
+  isApproved: boolean;
+  isFeatured: boolean;
+  createdAt: string;
+}
+
+// ---------------------------------------------------------------------------
+// Reservation
+// ---------------------------------------------------------------------------
+
+export interface Reservation {
+  _id: string;
+  reservationNumber: string; // "RES-YYYYMMDD-XXXX"
+  user?: string;
+  guestName: string;
+  guestEmail?: string;
+  guestPhone: string;
+  date: string;
+  time: string; // "HH:MM"
+  partySize: number;
+  tableNumber?: number;
+  status: ReservationStatus;
+  specialRequests?: string;
+  confirmedBy?: string;
+  createdAt: string;
+}
+
+export interface CreateReservationPayload {
+  guestName: string;
+  guestEmail?: string;
+  guestPhone: string;
+  date: string;
+  time: string;
+  partySize: number;
+  specialRequests?: string;
+}
+
+// ---------------------------------------------------------------------------
+// API response wrappers (generic helpers)
+// ---------------------------------------------------------------------------
+
+export interface ApiResponse<T> {
+  status: string;
+  data: T;
+}
+
+export interface ApiListResponse<T> {
+  status: string;
+  results: number;
+  data: T;
+}
+
+export interface ApiMessageResponse {
+  status: string;
+  message: string;
+}
+
